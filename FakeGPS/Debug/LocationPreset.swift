@@ -14,7 +14,7 @@ struct LocationPreset: Identifiable, Hashable {
     }
 
     static let office = LocationPreset(
-        id: "office", name: "Kantor (GSO)", systemImage: "airplane",
+        id: "office", name: "Garuda Sentra Operasi (GSO)", systemImage: "airplane",
         latitude: Geofence.office.latitude, longitude: Geofence.office.longitude
     )
     static let home = LocationPreset(

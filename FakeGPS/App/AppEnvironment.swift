@@ -17,7 +17,8 @@ final class AppEnvironment {
     init(arguments: [String] = ProcessInfo.processInfo.arguments, defaults: UserDefaults = .standard) {
         #if DEBUG
         let launch = LaunchConfiguration(arguments: arguments)
-        let mock = MockLocationManager(initialCoordinate: launch.mockCoordinate)
+        // Tanpa argument, fake GPS langsung berada di Garuda Sentra Operasi (GSO).
+        let mock = MockLocationManager(initialCoordinate: launch.mockCoordinate ?? LocationPreset.office.coordinate)
 
         let storedSource = defaults.string(forKey: SwitchableLocationProvider.sourceDefaultsKey)
             .flatMap(SwitchableLocationProvider.Source.init(rawValue:))

@@ -13,13 +13,66 @@ Target: iOS 16+, Swift 5, SwiftUI, MapKit, CoreLocation, XCTest.
 
 ---
 
+## Skenario utama: app kamu menganggap kamu ada di Garuda Sentra Operasi (GSO)
+
+Koordinat GSO: **-6.131336, 106.644936** (OpenStreetMap: "Garuda Operation & Crew Center",
+Jl. Raya Bandara, Soekarno-Hatta). Cek sekali di Google Maps; kalau meleset, ganti di
+`GPX/GarudaSentraOperasi.gpx` dan `Geofence.office`.
+
+### Cara 1: GPX di project app kamu (tanpa ubah kode, direkomendasikan)
+
+Lokasi disuntikkan di level sistem, jadi **semua** kode lokasi di app kamu ikut membaca GSO:
+`CLLocationManager`, titik biru MapKit, dan SDK pihak ketiga (Google Maps, dll.).
+Selama sesi debug aktif, **seluruh iPhone** juga berada di GSO (Apple Maps, geofence/region monitoring,
+notifikasi berbasis lokasi), walau app-nya di-background. Tiap lokasi tetap ditandai
+`sourceInformation.isSimulatedBySoftware == true`, dan ini tidak bisa disembunyikan tanpa jailbreak.
+
+1. Salin `GPX/GarudaSentraOperasi.gpx` ke folder project app kamu, lalu drag ke Project Navigator Xcode.
+   Di dialog, **jangan centang** *Add to targets*.
+2. **Product › Scheme › Edit Scheme… › Run › Options**:
+   - ☑ **Allow Location Simulation**
+   - **Default Location** = `GarudaSentraOperasi`
+3. Colok iPhone ke Mac, pilih iPhone sebagai destination, lalu ⌘R.
+   Begitu app jalan, app menerima lokasi GSO.
+4. Mau pindah lokasi tanpa restart: **Debug › Simulate Location**.
+5. Selesai testing: **Debug › Simulate Location › Don't Simulate Location**, baru Stop.
+
+Syarat: app harus dijalankan **dari Xcode** (kabel, atau Wi-Fi lewat *Window › Devices and Simulators ›
+Connect via network*). Kalau app dibuka langsung dari home screen tanpa sesi debug, lokasi kembali ke GPS asli.
+
+> Kalau app kamu punya pengecekan anti-fake-GPS (mis. `location.sourceInformation?.isSimulatedBySoftware`
+> di iOS 15+), lokasi dari Xcode akan terdeteksi sebagai simulasi. Nonaktifkan pengecekan itu hanya
+> di build DEBUG (`#if DEBUG`) supaya alur lainnya bisa dites.
+
+### Cara 2: `MockLocationManager` di dalam app kamu (tanpa Mac setelah terinstal)
+
+Cocok untuk testing di lapangan tanpa laptop, tapi butuh sedikit refactor:
+
+1. Salin `FakeGPS/Location/` dan `FakeGPS/Debug/` ke app kamu.
+2. Ubah kode lokasi app kamu supaya lewat `any LocationProviding`. Contohnya ada di `AppEnvironment` dan `TrackingViewModel`.
+3. Build Debug ke iPhone, buka layar **Fake GPS** › Sumber = **Fake GPS**.
+   Posisi awal fake GPS sudah di GSO (preset *Garuda Sentra Operasi (GSO)*).
+   Pilihan ini tersimpan, jadi app tetap "di GSO" walau dibuka ulang tanpa Mac.
+   Alternatif: centang argument `-UITest_MockLocation` + `-MockLocation_Coordinate -6.131336,106.644936` di scheme.
+
+Batasan: hanya kode yang lewat `LocationProviding` yang ikut palsu. Titik biru MapKit
+(`showsUserLocation`) dan SDK pihak ketiga tetap membaca GPS asli. Untuk itu pakai Cara 1.
+
+### Cara 3: Simulator
+
+```bash
+xcrun simctl location booted set -6.131336,106.644936
+```
+
+---
+
 ## Struktur
 
 ```
 project.yml                         # Definisi project (XcodeGen) -> FakeGPS.xcodeproj
 Config/Signing.xcconfig             # Signing; override lokal di Config/Local.xcconfig
 GPX/                                # File GPX untuk Xcode (TIDAK masuk bundle app)
-  Office.gpx  Home.gpx  CommuteRoute.gpx
+  GarudaSentraOperasi.gpx  Home.gpx  CommuteRoute.gpx
 FakeGPS/
   App/
     FakeGPSApp.swift                # Entry point + injeksi provider
@@ -96,7 +149,7 @@ Apple ID gratis (Personal Team) cukup; app-nya berlaku 7 hari lalu perlu di-run 
 ## Run di Simulator
 
 1. Pilih scheme **FakeGPS**, lalu destination iPhone simulator mana saja. Tekan ⌘R.
-2. Tap **Mulai tracking**. Karena `Office.gpx` jadi default location, posisi langsung di kantor.
+2. Tap **Mulai tracking**. Karena `GarudaSentraOperasi.gpx` jadi default location, posisi langsung di GSO.
 3. Tap ikon 🔍📍 (kanan atas) untuk membuka layar **Fake GPS**.
 
 Opsi lokasi khusus Simulator:
@@ -129,7 +182,7 @@ Opsi lokasi khusus Simulator:
 **Product › Scheme › Edit Scheme…** (⌘<) › **Run** (panel kiri) › tab **Options**:
 
 - ☑ **Allow Location Simulation**
-- **Default Location**: pilih `Office` (atau `None` kalau tidak mau lokasi otomatis saat run)
+- **Default Location**: pilih `GarudaSentraOperasi` (atau `None` kalau tidak mau lokasi otomatis saat run)
 
 > Di project ini sudah diatur via `project.yml` (`simulateLocation.allow` & `defaultLocation`).
 > Kalau Default Location terlihat kosong setelah generate, pilih ulang manual dari dropdown.
@@ -169,7 +222,7 @@ Setiap kali ⌘R ke iPhone, lokasi otomatis mengikuti file tersebut.
 
 Saat app sedang di-debug (iPhone tersambung, ikon ■ Stop aktif):
 
-- Menu **Debug › Simulate Location** › pilih `Office`, `Home`, `CommuteRoute`, atau kota bawaan Apple.
+- Menu **Debug › Simulate Location** › pilih `GarudaSentraOperasi`, `Home`, `CommuteRoute`, atau kota bawaan Apple.
 - Atau klik ikon **panah lokasi** (➤) di debug bar (panel bawah Xcode) › pilih lokasi.
 - **Add GPX File to Workspace…** di menu yang sama untuk memuat GPX tanpa memasukkannya ke project.
 - Pilih **Don't Simulate Location** untuk kembali ke GPS asli.

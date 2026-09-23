@@ -84,12 +84,12 @@ schemes:
       # = Edit Scheme > Run > Options > "Allow Location Simulation" + "Default Location"
       simulateLocation:
         allow: true
-        defaultLocation: GPX/Office.gpx
+        defaultLocation: GPX/GarudaSentraOperasi.gpx
       # Tersedia di Edit Scheme > Run > Arguments, tinggal dicentang.
       commandLineArguments:
         "-UITest_MockLocation": false
         "-UITest_RealLocation": false
-        "-MockLocation_Coordinate -6.1754,106.8272": false
+        "-MockLocation_Coordinate -6.131336,106.644936": false   # GSO
     test:
       config: Debug
       gatherCoverageData: true

@@ -15,7 +15,7 @@ struct Geofence: Equatable {
     }
 
     /// Garuda Sentra Operasi (GSO), Bandara Soekarno-Hatta — titik dari OpenStreetMap
-    /// ("Garuda Operation & Crew Center"). Samakan dengan `GPX/Office.gpx`.
+    /// ("Garuda Operation & Crew Center"). Samakan dengan `GPX/GarudaSentraOperasi.gpx`.
     static let office = Geofence(name: "Kantor (GSO)", latitude: -6.131336, longitude: 106.644936, radius: 150)
 }
 

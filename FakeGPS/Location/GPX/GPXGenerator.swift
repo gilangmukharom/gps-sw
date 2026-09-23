@@ -60,7 +60,7 @@ enum GPXGenerator {
 
     // MARK: - Builder
 
-    /// GPX satu titik statis (seperti `Office.gpx`).
+    /// GPX satu titik statis (seperti `GarudaSentraOperasi.gpx`).
     static func singleLocation(_ coordinate: CLLocationCoordinate2D, name: String) -> GPXDocument {
         GPXDocument(name: name, waypoints: [GPXPoint(coordinate: coordinate, name: name)])
     }
