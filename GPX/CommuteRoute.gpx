@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FakeGPS"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>Rumah ke Kantor (GSO)</name>
+  </metadata>
+  <!--
+    Xcode bergerak antar <wpt> sesuai selisih <time>.
+    Tanggalnya bebas; yang dipakai hanya selisih waktu antar titik.
+    Garis lurus kasar lewat Tol JORR -> Tol Sedyatmo -> area bandara,
+    ±27 km dalam ±32 menit (±50 km/j). Bukan jalur jalan yang presisi.
+  -->
+  <wpt lat="-6.2615000" lon="106.7810000"><time>2026-01-01T07:00:00Z</time><name>Rumah</name></wpt>
+  <wpt lat="-6.1935000" lon="106.7690000"><time>2026-01-01T07:09:13Z</time></wpt>
+  <wpt lat="-6.1300000" lon="106.7400000"><time>2026-01-01T07:18:31Z</time></wpt>
+  <wpt lat="-6.1140000" lon="106.6900000"><time>2026-01-01T07:25:29Z</time></wpt>
+  <wpt lat="-6.1330000" lon="106.6600000"><time>2026-01-01T07:30:12Z</time></wpt>
+  <wpt lat="-6.1313360" lon="106.6449360"><time>2026-01-01T07:32:13Z</time><name>Kantor (GSO)</name></wpt>
+</gpx>

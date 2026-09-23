@@ -1,0 +1,153 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: "Build configuration (Debug = ada layar Fake GPS, Release = tanpa kode mock)"
+        type: choice
+        options: [Debug, Release]
+        default: Debug
+      run_ui_tests:
+        description: "Jalankan juga UI test (lebih lama)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SCHEME: FakeGPS
+  PROJECT: FakeGPS.xcodeproj
+
+jobs:
+  test:
+    name: Unit tests (Simulator)
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen xcbeautify
+          xcodegen generate
+
+      - name: Pick iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in devices if "iOS" in k), reverse=True)
+          print(next(d["udid"] for k in ios for d in devices[k] if d["name"].startswith("iPhone")))
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          ONLY_TESTING="-only-testing:FakeGPSTests"
+          if [ "${{ inputs.run_ui_tests }}" = "true" ]; then ONLY_TESTING=""; fi
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath build/TestResults.xcresult \
+            $ONLY_TESTING \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: build/TestResults.xcresult
+
+  build-ipa:
+    name: Build unsigned IPA (${{ matrix.configuration }})
+    needs: test
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Manual run: hanya konfigurasi yang dipilih. Push/PR: Debug + Release.
+        configuration: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.configuration) || '["Debug","Release"]') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen xcbeautify
+          xcodegen generate
+
+      - name: Archive (tanpa code signing)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration "${{ matrix.configuration }}" \
+            -destination "generic/platform=iOS" \
+            -archivePath "build/$SCHEME.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            | xcbeautify --renderer github-actions
+
+      - name: Package IPA
+        id: package
+        run: |
+          APP_PATH="build/$SCHEME.xcarchive/Products/Applications/$SCHEME.app"
+          test -d "$APP_PATH" || { echo "::error::$APP_PATH tidak ditemukan"; exit 1; }
+
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Info.plist")
+          IPA_NAME="$SCHEME-$VERSION-${{ matrix.configuration }}-${GITHUB_SHA::7}-unsigned.ipa"
+
+          mkdir -p build/ipa/Payload
+          cp -R "$APP_PATH" build/ipa/Payload/
+          (cd build/ipa && zip -qry "../$IPA_NAME" Payload)
+
+          echo "ipa_name=$IPA_NAME" >> "$GITHUB_OUTPUT"
+          ls -lh "build/$IPA_NAME"
+
+      - name: Verifikasi Release bebas kode mock
+        if: matrix.configuration == 'Release'
+        run: |
+          BINARY="build/$SCHEME.xcarchive/Products/Applications/$SCHEME.app/$SCHEME"
+          if strings "$BINARY" | grep -E "MockLocationManager|SwitchableLocationProvider|FakeGPSDebugView"; then
+            echo "::error::Simbol mock ditemukan di binary Release!"
+            exit 1
+          fi
+          echo "OK: tidak ada simbol mock di binary Release."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.ipa_name }}
+          path: build/${{ steps.package.outputs.ipa_name }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dSYM-${{ matrix.configuration }}
+          path: build/${{ env.SCHEME }}.xcarchive/dSYMs
+          if-no-files-found: ignore
+          retention-days: 14

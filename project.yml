@@ -1,0 +1,104 @@
+name: FakeGPS
+
+options:
+  bundleIdPrefix: com.example.fakegps
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  developmentLanguage: id
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  FakeGPS:
+    type: application
+    platform: iOS
+    sources:
+      - path: FakeGPS
+      # File GPX hanya dipakai Xcode untuk "Simulate Location".
+      # Dimasukkan ke project TANPA build phase -> tidak ikut ke bundle app.
+      - path: GPX
+        buildPhase: none
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+    info:
+      path: FakeGPS/Info.plist
+      properties:
+        CFBundleDisplayName: FakeGPS
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSLocationWhenInUseUsageDescription: "Lokasi dipakai untuk menampilkan posisi dan mendeteksi geofence."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(FAKEGPS_APP_BUNDLE_ID)
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+
+  FakeGPSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FakeGPSTests
+    dependencies:
+      - target: FakeGPS
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.fakegps.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  FakeGPSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: FakeGPSUITests
+    dependencies:
+      - target: FakeGPS
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.fakegps.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: FakeGPS
+
+schemes:
+  FakeGPS:
+    build:
+      targets:
+        FakeGPS: all
+        FakeGPSTests: [test]
+        FakeGPSUITests: [test]
+    run:
+      config: Debug
+      # = Edit Scheme > Run > Options > "Allow Location Simulation" + "Default Location"
+      simulateLocation:
+        allow: true
+        defaultLocation: GPX/Office.gpx
+      # Tersedia di Edit Scheme > Run > Arguments, tinggal dicentang.
+      commandLineArguments:
+        "-UITest_MockLocation": false
+        "-UITest_RealLocation": false
+        "-MockLocation_Coordinate -6.1754,106.8272": false
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - FakeGPSTests
+        - FakeGPSUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

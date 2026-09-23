@@ -1,0 +1,12 @@
+// Signing dasar. Jangan isi Team ID di sini (file ini di-commit).
+// Buat file Config/Local.xcconfig (di-ignore git) berisi:
+//
+//   DEVELOPMENT_TEAM = ABCDE12345
+//   FAKEGPS_APP_BUNDLE_ID = com.namakamu.fakegps.app
+//
+// supaya bisa run di iPhone fisik tanpa mengubah project.yml.
+
+DEVELOPMENT_TEAM =
+FAKEGPS_APP_BUNDLE_ID = com.example.fakegps.app
+
+#include? "Local.xcconfig"

@@ -1,0 +1,19 @@
+# Xcode project digenerate oleh XcodeGen dari project.yml
+*.xcodeproj
+FakeGPS/Info.plist
+
+# Signing lokal
+Config/Local.xcconfig
+
+# Build
+build/
+DerivedData/
+*.xcarchive
+*.ipa
+*.xcresult
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+
+.DS_Store
